@@ -1,5 +1,5 @@
 """
-Home Assistant integration setup for PGE Flex Pricing with config flow support
+Home Assistant integration setup for PGE Flex Pricing with config flow support and HACS compatibility
 """
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry

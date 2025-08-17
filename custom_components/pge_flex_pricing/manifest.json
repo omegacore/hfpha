@@ -3,7 +3,7 @@
   "name": "PGE Flex Pricing",
   "documentation": "https://api-calculate-docs.gridx.com/acgd/api-introduction-overview",
   "dependencies": [],
-  "codeowners": ["@your-github-username"],
+  "codeowners": ["@omegacore"],
   "requirements": ["requests", "voluptuous"],
   "version": "0.1.0",
   "config_flow": true
