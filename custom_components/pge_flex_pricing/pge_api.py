@@ -1,17 +1,22 @@
 """
 PGE API client for hourly flex pricing (no authentication required)
+Updated to use the working endpoint and parameters.
 """
 import requests
 from datetime import datetime, timedelta
 
 class PGEFlexPricingClient:
-    BASE_URL = "https://api-calculate.gridx.com/acgd/v1/flex-pricing"
+    BASE_URL = "https://pge-pe-api.gridx.com/v1/getPricing"
 
-    def get_hourly_prices(self, circuit_id: str, start: datetime, end: datetime):
+    def get_hourly_prices(self, circuit_id: str, start: datetime, end: datetime, ratename="EV2A", utility="PGE", market="DAM", program="CalFUSE"):
         params = {
-            "circuitId": circuit_id,
-            "start": start.strftime("%Y-%m-%dT%H:%M:%SZ"),
-            "end": end.strftime("%Y-%m-%dT%H:%M:%SZ")
+            "utility": utility,
+            "market": market,
+            "startdate": start.strftime("%Y%m%d"),
+            "enddate": end.strftime("%Y%m%d"),
+            "ratename": ratename,
+            "representativeCircuitId": circuit_id,
+            "program": program
         }
         response = requests.get(self.BASE_URL, params=params)
         response.raise_for_status()
