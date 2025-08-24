@@ -1,0 +1,9 @@
+{
+  "name": "PGE Flex Pricing",
+  "content_in_root": false,
+  "domain": "pge_flex_pricing",
+  "country": "us",
+  "homeassistant": "2023.0.0",
+  "render_readme": true,
+  "iot_class": "cloud_polling"
+}
