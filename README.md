@@ -32,5 +32,69 @@ prices = client.get_hourly_prices(circuit_id, now, end)
 print(prices)
 ```
 
+## Example: Lovelace Dashboard Card
+To display the hourly flex prices in your Home Assistant dashboard, add a card like this to your Lovelace UI:
+
+```yaml
+- type: entities
+  title: PGE Hourly Flex Prices
+  entities:
+    - entity: sensor.pge_flex_price_00  # Replace with your actual entity names
+    - entity: sensor.pge_flex_price_01
+    - entity: sensor.pge_flex_price_02
+    # ...add more hourly sensors as needed
+```
+
+Or use a custom card for a more visual display:
+
+```yaml
+- type: custom:mini-graph-card
+  name: PGE Flex Prices
+  entities:
+    - sensor.pge_flex_price_00
+    - sensor.pge_flex_price_01
+    - sensor.pge_flex_price_02
+    # ...add more hourly sensors as needed
+  show_legend: true
+  hours_to_show: 24
+  points_per_hour: 1
+```
+
+Adjust the entity names to match those created by your integration (e.g., `sensor.pge_flex_price_00`, `sensor.pge_flex_price_01`, etc.).
+
+## Example: Lovelace Dashboard Card (Single Sensor)
+To display the hourly flex prices in your Home Assistant dashboard, add a card like this to your Lovelace UI:
+
+```yaml
+- type: entities
+  title: PGE Hourly Flex Pricing
+  entities:
+    - entity: sensor.pge_flex_pricing
+```
+
+To show individual hourly prices, use the sensor's attributes in a template or custom card. For example:
+
+```yaml
+- type: custom:template-entity-row
+  entity: sensor.pge_flex_pricing
+  name: Price for 14:00
+  state: "{{ state_attr('sensor.pge_flex_pricing', 'price_14') }}"
+```
+
+Or use a custom card to graph the hourly prices:
+
+```yaml
+- type: custom:mini-graph-card
+  name: PGE Flex Prices
+  entities:
+    - sensor.pge_flex_pricing
+  attribute: prices
+  show_legend: true
+  hours_to_show: 24
+  points_per_hour: 1
+```
+
+Adjust the attribute references to match your needs. The sensor exposes all hourly prices as attributes for easy access.
+
 ## License
 MIT
