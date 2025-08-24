@@ -1,6 +1,6 @@
 """
 Home Assistant sensor platform for PGE hourly flex pricing (no authentication required)
-Single sensor with all hourly prices as attributes.
+Single sensor with all hourly prices as attributes. Uses config entry data for circuit_id.
 """
 import logging
 from datetime import datetime, timedelta
@@ -14,10 +14,10 @@ _LOGGER = logging.getLogger(__name__)
 
 SENSOR_NAME = "PGE Flex Pricing"
 
-async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
-    circuit_id = config.get("circuit_id")
+async def async_setup_entry(hass, config_entry, async_add_entities):
+    circuit_id = config_entry.data.get("circuit_id")
     if not circuit_id:
-        _LOGGER.error("circuit_id must be set in configuration.yaml")
+        _LOGGER.error("circuit_id must be set via integration setup")
         return
     client = PGEFlexPricingClient()
     now = datetime.utcnow()
