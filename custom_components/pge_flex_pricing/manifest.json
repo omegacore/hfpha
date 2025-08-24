@@ -2,6 +2,7 @@
   "domain": "pge_flex_pricing",
   "name": "PGE Flex Pricing",
   "documentation": "https://api-calculate-docs.gridx.com/acgd/api-introduction-overview",
+  "issue_tracker": "https://github.com/omegacore/hfpha/issues",
   "dependencies": [],
   "codeowners": ["@omegacore"],
   "requirements": ["requests", "voluptuous"],
