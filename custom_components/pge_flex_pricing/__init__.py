@@ -3,12 +3,10 @@ Home Assistant integration setup for PGE Flex Pricing with config flow support a
 """
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.helpers import discovery
 
 DOMAIN = "pge_flex_pricing"
+PLATFORMS = ["sensor"]
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
-    hass.async_create_task(
-        discovery.async_load_platform(hass, "sensor", DOMAIN, {}, entry.data)
-    )
+    await hass.config_entries.async_forward_entry_setup(entry, "sensor")
     return True
