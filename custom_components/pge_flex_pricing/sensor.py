@@ -1,7 +1,6 @@
 """
 Home Assistant sensor platform for PGE hourly flex pricing (no authentication required)
-Single sensor with all hourly prices as attributes. Uses config entry data for circuit_id.
-Async API call for Home Assistant compatibility.
+Single sensor with parsed hourly prices as attributes.
 """
 import logging
 from datetime import datetime, timedelta
@@ -25,14 +24,27 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     now = datetime.utcnow()
     end = now + timedelta(hours=24)
     session = async_get_clientsession(hass)
-    prices = await client.get_hourly_prices(session, circuit_id, now, end)
-    async_add_entities([PGEFlexPricingSensor(prices, circuit_id)])
+    raw_data = await client.get_hourly_prices(session, circuit_id, now, end)
+    # Parse hourly prices from API response
+    hourly_prices = []
+    prices_by_hour = {}
+    try:
+        for entry in raw_data.get("prices", []):
+            hour = entry.get("hour")
+            price = entry.get("price")
+            if hour is not None and price is not None:
+                hourly_prices.append(price)
+                prices_by_hour[f"price_{hour:02}"] = price
+    except Exception as e:
+        _LOGGER.error(f"Error parsing API response: {e}")
+    async_add_entities([PGEFlexPricingSensor(hourly_prices, prices_by_hour, circuit_id)])
 
 class PGEFlexPricingSensor(SensorEntity):
-    def __init__(self, prices, circuit_id):
-        self._prices = prices
+    def __init__(self, hourly_prices, prices_by_hour, circuit_id):
+        self._hourly_prices = hourly_prices
+        self._prices_by_hour = prices_by_hour
         self._circuit_id = circuit_id
-        self._state = prices.get("00") if "00" in prices else next(iter(prices.values()), None)
+        self._state = hourly_prices[0] if hourly_prices else None
         self._attr_name = SENSOR_NAME
         self._attr_unique_id = f"pge_flex_pricing_{circuit_id}"
 
@@ -42,7 +54,6 @@ class PGEFlexPricingSensor(SensorEntity):
 
     @property
     def extra_state_attributes(self):
-        attrs = {"circuit_id": self._circuit_id, "prices": self._prices}
-        for hour, price in self._prices.items():
-            attrs[f"price_{hour}"] = price
+        attrs = {"circuit_id": self._circuit_id, "hourly_prices": self._hourly_prices}
+        attrs.update(self._prices_by_hour)
         return attrs
