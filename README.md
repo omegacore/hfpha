@@ -32,94 +32,48 @@ prices = client.get_hourly_prices(circuit_id, now, end)
 print(prices)
 ```
 
-## Example: Lovelace Dashboard Card
-To display the hourly flex prices in your Home Assistant dashboard, add a card like this to your Lovelace UI:
+## How it works
+- The integration creates one device with 24 sensor entities, each representing the price for a specific hour.
+- Sensors are named `sensor.pge_flex_price_00`, `sensor.pge_flex_price_01`, ..., `sensor.pge_flex_price_23`.
+- Each sensor has attributes for the hour, price, and circuit ID.
+- Prices are updated once per day from the PGE API.
+
+## Example: Lovelace Entities Card
+To display all hourly prices in your dashboard:
 
 ```yaml
 - type: entities
   title: PGE Hourly Flex Prices
   entities:
-    - entity: sensor.pge_flex_price_00  # Replace with your actual entity names
+    - entity: sensor.pge_flex_price_00
     - entity: sensor.pge_flex_price_01
     - entity: sensor.pge_flex_price_02
-    # ...add more hourly sensors as needed
+    # ... add all sensors up to sensor.pge_flex_price_23
 ```
-
-Or use a custom card for a more visual display:
-
-```yaml
-- type: custom:mini-graph-card
-  name: PGE Flex Prices
-  entities:
-    - sensor.pge_flex_price_00
-    - sensor.pge_flex_price_01
-    - sensor.pge_flex_price_02
-    # ...add more hourly sensors as needed
-  show_legend: true
-  hours_to_show: 24
-  points_per_hour: 1
-```
-
-Adjust the entity names to match those created by your integration (e.g., `sensor.pge_flex_price_00`, `sensor.pge_flex_price_01`, etc.).
-
-## Example: Lovelace Dashboard Card (Single Sensor)
-To display the hourly flex prices in your Home Assistant dashboard, add a card like this to your Lovelace UI:
-
-```yaml
-- type: entities
-  title: PGE Hourly Flex Pricing
-  entities:
-    - entity: sensor.pge_flex_pricing
-```
-
-To show individual hourly prices, use the sensor's attributes in a template or custom card. For example:
-
-```yaml
-- type: custom:template-entity-row
-  entity: sensor.pge_flex_pricing
-  name: Price for 14:00
-  state: "{{ state_attr('sensor.pge_flex_pricing', 'price_14') }}"
-```
-
-Or use a custom card to graph the hourly prices:
-
-```yaml
-- type: custom:mini-graph-card
-  name: PGE Flex Prices
-  entities:
-    - sensor.pge_flex_pricing
-  attribute: prices
-  show_legend: true
-  hours_to_show: 24
-  points_per_hour: 1
-```
-
-Adjust the attribute references to match your needs. The sensor exposes all hourly prices as attributes for easy access.
 
 ## Example: Lovelace Bar Chart for Hourly Prices
-To display the hourly flex prices as a bar chart in your Home Assistant dashboard, use the [custom:plotly-graph-card](https://github.com/dccsillag/home-assistant-plotly-graph-card) or [custom:apexcharts-card](https://github.com/RomRider/apexcharts-card). Here’s an example using apexcharts-card:
+To display the hourly flex prices as a timeseries bar chart, use the [apexcharts-card](https://github.com/RomRider/apexcharts-card) with a column type and a data generator. Here’s the updated YAML example for a single sensor with separate times and prices keys:
 
 ```yaml
 - type: custom:apexcharts-card
+  apex_config:
+    chart:
+      type: column
   header:
     show: true
     title: PGE Hourly Flex Prices
-  chart_type: bar
   series:
-    - entity: sensor.pge_flex_pricing
-      attribute: hourly_prices
-      name: Hourly Price
-      type: column
+    - entity: sensor.pge_flex_prices
+      name: "Hourly Prices"
       data_generator: |
-        return entity.attributes.hourly_prices.map((price, idx) => {
-          return [idx, price];
-        });
-  xaxis:
-    categories:
-      - "00" - "01" - "02" - "03" - "04" - "05" - "06" - "07" - "08" - "09" - "10" - "11" - "12" - "13" - "14" - "15" - "16" - "17" - "18" - "19" - "20" - "21" - "22" - "23"
+        const data = JSON.parse(states['sensor.pge_flex_prices'].state);
+        return data.times.map((t, i) => ({ x: t, y: data.prices[i] }));
 ```
 
-This will show a bar for each hour using the `hourly_prices` attribute from your sensor. Make sure you have the apexcharts-card installed via HACS.
+This approach uses a single sensor whose state is a JSON string with two arrays: `times` (ISO timestamps) and `prices` (hourly price values). The data generator parses the state and returns timeseries data for the chart.
+
+## Automation
+You can use the hourly sensors in automations to trigger actions based on price changes.
 
 ## License
 MIT

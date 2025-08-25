@@ -26,36 +26,46 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     end = now + timedelta(hours=24)
     session = async_get_clientsession(hass)
     raw_data = await client.get_hourly_prices(session, circuit_id, now, end)
-    sensors = []
     try:
-        # Parse the correct structure from the sample response
+        prices = []
         for day in raw_data.get("data", []):
-            for idx, entry in enumerate(day.get("priceDetails", [])):
-                hour = idx
+            for entry in day.get("priceDetails", []):
                 price = float(entry.get("intervalPrice"))
-                sensors.append(PGEFlexPriceSensor(hour, price, circuit_id, config_entry.entry_id))
+                prices.append(price)
+        times = [f"{idx:02}" for idx in range(len(prices))]
+        entity = PGEFlexPricesSensor(times, prices, circuit_id)
+        async_add_entities([entity])
     except Exception as e:
         _LOGGER.error(f"Error parsing API response: {e}")
-    async_add_entities(sensors)
 
-class PGEFlexPriceSensor(SensorEntity):
-    def __init__(self, hour, price, circuit_id, entry_id):
-        self._hour = hour
-        self._price = price
-        self._state = price
-        self._attr_name = f"{DEFAULT_NAME} {hour:02}"
-        self._attr_unique_id = f"pge_flex_price_{circuit_id}_{hour:02}"
-        self._attr_extra_state_attributes = {"hour": self._hour, "price": self._price, "circuit_id": circuit_id}
-        self._attr_device_info = {
-            "identifiers": {(DOMAIN, entry_id)},
-            "name": "PGE Flex Pricing",
-            "manufacturer": "PG&E",
-            "model": "Hourly Flex Pricing"
+class PGEFlexPricesSensor(SensorEntity):
+    def __init__(self, times, prices, circuit_id):
+        self._times = times
+        self._prices = prices
+        self._circuit_id = circuit_id
+        self._attr_name = "PGE Flex Prices"
+        self._attr_unique_id = "pge_flex_prices"
+        self._attr_state = self._get_state()
+        self._attr_extra_state_attributes = {
+            "circuit_id": circuit_id,
+            "last_update": times[0] if times else None
         }
+
+    def _get_state(self):
+        import json
+        return json.dumps({"times": self._times, "prices": self._prices})
+
+    @property
+    def name(self):
+        return self._attr_name
+
+    @property
+    def unique_id(self):
+        return self._attr_unique_id
 
     @property
     def state(self):
-        return self._state
+        return self._attr_state
 
     @property
     def extra_state_attributes(self):
