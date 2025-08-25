@@ -8,5 +8,5 @@ DOMAIN = "pge_flex_pricing"
 PLATFORMS = ["sensor"]
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
-    await hass.config_entries.async_forward_entry_setup(entry, "sensor")
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
