@@ -1,6 +1,6 @@
 """
 Home Assistant sensor platform for PGE hourly flex pricing (no authentication required)
-Single sensor with parsed hourly prices as attributes.
+Creates a separate sensor for each hour.
 """
 import logging
 from datetime import datetime, timedelta
@@ -13,7 +13,7 @@ from .pge_api import PGEFlexPricingClient
 
 _LOGGER = logging.getLogger(__name__)
 
-SENSOR_NAME = "PGE Flex Pricing"
+DEFAULT_NAME = "PGE Flex Price"
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
     circuit_id = config_entry.data.get("circuit_id")
@@ -25,28 +25,25 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     end = now + timedelta(hours=24)
     session = async_get_clientsession(hass)
     raw_data = await client.get_hourly_prices(session, circuit_id, now, end)
-    # Parse hourly prices from API response
-    hourly_prices = []
-    prices_by_hour = {}
+    sensors = []
     try:
         for entry in raw_data.get("prices", []):
             hour = entry.get("hour")
             price = entry.get("price")
             if hour is not None and price is not None:
-                hourly_prices.append(price)
-                prices_by_hour[f"price_{hour:02}"] = price
+                sensors.append(PGEFlexPriceSensor(hour, price, circuit_id))
     except Exception as e:
         _LOGGER.error(f"Error parsing API response: {e}")
-    async_add_entities([PGEFlexPricingSensor(hourly_prices, prices_by_hour, circuit_id)])
+    async_add_entities(sensors)
 
-class PGEFlexPricingSensor(SensorEntity):
-    def __init__(self, hourly_prices, prices_by_hour, circuit_id):
-        self._hourly_prices = hourly_prices
-        self._prices_by_hour = prices_by_hour
-        self._circuit_id = circuit_id
-        self._state = hourly_prices[0] if hourly_prices else None
-        self._attr_name = SENSOR_NAME
-        self._attr_unique_id = f"pge_flex_pricing_{circuit_id}"
+class PGEFlexPriceSensor(SensorEntity):
+    def __init__(self, hour, price, circuit_id):
+        self._hour = hour
+        self._price = price
+        self._state = price
+        self._attr_name = f"{DEFAULT_NAME} {hour:02}"
+        self._attr_unique_id = f"pge_flex_price_{circuit_id}_{hour:02}"
+        self._attr_extra_state_attributes = {"hour": self._hour, "price": self._price, "circuit_id": circuit_id}
 
     @property
     def state(self):
@@ -54,6 +51,4 @@ class PGEFlexPricingSensor(SensorEntity):
 
     @property
     def extra_state_attributes(self):
-        attrs = {"circuit_id": self._circuit_id, "hourly_prices": self._hourly_prices}
-        attrs.update(self._prices_by_hour)
-        return attrs
+        return self._attr_extra_state_attributes
