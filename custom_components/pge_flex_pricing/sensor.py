@@ -48,14 +48,30 @@ class PGEFlexPricesSensor(SensorEntity):
         self._circuit_id = circuit_id
         self._attr_name = "PGE Flex Prices"
         self._attr_unique_id = "pge_flex_prices"
-        # State is the latest price
-        self._attr_state = prices[-1] if prices else None
+        self._attr_state = self._get_current_price()
         self._attr_extra_state_attributes = {
             "times": times,
             "prices": prices,
             "circuit_id": circuit_id,
             "last_update": times[0] if times else None
         }
+
+    def _get_current_price(self):
+        from datetime import datetime
+        now = datetime.utcnow()
+        # Find the index of the closest time not after now
+        idx = None
+        for i, t in enumerate(self._times):
+            try:
+                ts = datetime.fromisoformat(t)
+                if ts > now:
+                    break
+                idx = i
+            except Exception:
+                continue
+        if idx is not None and idx < len(self._prices):
+            return self._prices[idx]
+        return None
 
     @property
     def name(self):

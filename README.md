@@ -66,11 +66,12 @@ To display the hourly flex prices as a timeseries bar chart, use the [apexcharts
     - entity: sensor.pge_flex_prices
       name: "Hourly Prices"
       data_generator: |
-        const data = JSON.parse(states['sensor.pge_flex_prices'].state);
-        return data.times.map((t, i) => ({ x: t, y: data.prices[i] }));
+        const times = attributes['sensor.pge_flex_prices'].times;
+        const prices = attributes['sensor.pge_flex_prices'].prices;
+        return times.map((t, i) => ({ x: t, y: prices[i] }));
 ```
 
-This approach uses a single sensor whose state is a JSON string with two arrays: `times` (ISO timestamps) and `prices` (hourly price values). The data generator parses the state and returns timeseries data for the chart.
+This approach uses a single sensor whose attributes include two arrays: `times` (ISO timestamps) and `prices` (hourly price values). The data generator reads these attributes and returns timeseries data for the chart.
 
 ## Automation
 You can use the hourly sensors in automations to trigger actions based on price changes.
