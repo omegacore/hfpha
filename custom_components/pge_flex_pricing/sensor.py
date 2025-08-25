@@ -1,11 +1,13 @@
 """
 Home Assistant sensor platform for PGE hourly flex pricing (no authentication required)
 Single sensor with all hourly prices as attributes. Uses config entry data for circuit_id.
+Async API call for Home Assistant compatibility.
 """
 import logging
 from datetime import datetime, timedelta
 try:
     from homeassistant.components.sensor import SensorEntity
+    from homeassistant.helpers.aiohttp_client import async_get_clientsession
 except ImportError:
     SensorEntity = object  # For linting outside HA
 from .pge_api import PGEFlexPricingClient
@@ -22,7 +24,8 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     client = PGEFlexPricingClient()
     now = datetime.utcnow()
     end = now + timedelta(hours=24)
-    prices = client.get_hourly_prices(circuit_id, now, end)
+    session = async_get_clientsession(hass)
+    prices = await client.get_hourly_prices(session, circuit_id, now, end)
     async_add_entities([PGEFlexPricingSensor(prices, circuit_id)])
 
 class PGEFlexPricingSensor(SensorEntity):

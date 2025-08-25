@@ -1,14 +1,13 @@
 """
 PGE API client for hourly flex pricing (no authentication required)
-Updated to use the working endpoint and parameters.
+Async implementation for Home Assistant compatibility.
 """
-import requests
-from datetime import datetime, timedelta
+import aiohttp
 
 class PGEFlexPricingClient:
     BASE_URL = "https://pge-pe-api.gridx.com/v1/getPricing"
 
-    def get_hourly_prices(self, circuit_id: str, start: datetime, end: datetime, ratename="EV2A", utility="PGE", market="DAM", program="CalFUSE"):
+    async def get_hourly_prices(self, session, circuit_id, start, end, ratename="EV2A", utility="PGE", market="DAM", program="CalFUSE"):
         params = {
             "utility": utility,
             "market": market,
@@ -18,6 +17,6 @@ class PGEFlexPricingClient:
             "representativeCircuitId": circuit_id,
             "program": program
         }
-        response = requests.get(self.BASE_URL, params=params)
-        response.raise_for_status()
-        return response.json()
+        async with session.get(self.BASE_URL, params=params) as response:
+            response.raise_for_status()
+            return await response.json()
