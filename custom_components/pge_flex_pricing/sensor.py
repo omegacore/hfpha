@@ -26,17 +26,20 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     end = now + timedelta(hours=24)
     session = async_get_clientsession(hass)
     raw_data = await client.get_hourly_prices(session, circuit_id, now, end)
+    prices = []
     try:
-        prices = []
         for day in raw_data.get("data", []):
             for entry in day.get("priceDetails", []):
                 price = float(entry.get("intervalPrice"))
                 prices.append(price)
-        times = [f"{idx:02}" for idx in range(len(prices))]
-        entity = PGEFlexPricesSensor(times, prices, circuit_id)
-        async_add_entities([entity])
     except Exception as e:
         _LOGGER.error(f"Error parsing API response: {e}")
+        return
+    # Generate ISO timestamps for each hour starting from now
+    now = datetime.utcnow().replace(minute=0, second=0, microsecond=0)
+    times = [(now + timedelta(hours=idx)).isoformat() for idx in range(len(prices))]
+    entity = PGEFlexPricesSensor(times, prices, circuit_id)
+    async_add_entities([entity])
 
 class PGEFlexPricesSensor(SensorEntity):
     def __init__(self, times, prices, circuit_id):
@@ -45,15 +48,14 @@ class PGEFlexPricesSensor(SensorEntity):
         self._circuit_id = circuit_id
         self._attr_name = "PGE Flex Prices"
         self._attr_unique_id = "pge_flex_prices"
-        self._attr_state = self._get_state()
+        # State is the latest price
+        self._attr_state = prices[-1] if prices else None
         self._attr_extra_state_attributes = {
+            "times": times,
+            "prices": prices,
             "circuit_id": circuit_id,
             "last_update": times[0] if times else None
         }
-
-    def _get_state(self):
-        import json
-        return json.dumps({"times": self._times, "prices": self._prices})
 
     @property
     def name(self):
